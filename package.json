@@ -25,6 +25,7 @@
     "@babel/core": "^7.24.0",
     "@babel/plugin-transform-runtime": "^7.24.0",
     "@babel/preset-env": "^7.24.0",
+    "@changesets/cli": "^2.27.1",
     "@rollup/plugin-terser": "^0.4.4",
     "rimraf": "^5.0.5",
     "rollup": "^4.13.0",
