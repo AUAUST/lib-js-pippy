@@ -3,7 +3,8 @@ import { expect, test } from "vitest";
 import { Pipe } from "~/pipe";
 
 test("test", () => {
-  const pipe = Pipe.pipe<string>("toUpperCase")
+  const pipe = new Pipe()
+    .pipe("toUpperCase")
     .pipe("split", " ")
     .pipe("join", "-")
     .pipe("split", "")
