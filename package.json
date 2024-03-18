@@ -9,8 +9,8 @@
     "build": "pnpm test && pnpm run build:clean && pnpm run build:js",
     "build:clean": "rimraf dist",
     "build:js": "rollup -c",
-    "test": "vitest run --config vitest.config.ts --",
-    "watch": "vitest --config vitest.config.ts --",
+    "test": "vitest run --config vitest.config.ts --typecheck -- && pnpm typecheck",
+    "watch": "vitest --config vitest.config.ts --typecheck --",
     "coverage": "vitest run --coverage",
     "typecheck": "echo 'Typechecking...' && tsc --noEmit",
     "publish": "pnpm build && changeset publish"
