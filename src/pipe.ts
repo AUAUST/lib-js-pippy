@@ -20,13 +20,19 @@ const handler: ProxyHandler<Pipe> = {
 };
 const wrapPipe = (pipe: Pipe) => new Proxy(pipe, handler);
 
+/**
+ * The arguments that can be passed to a pipeline entry.
+ * It's either an array of arguments or a function that takes the previous value and returns an array of arguments.
+ */
+type PipelineEntryArguments = any[] | [(value: any) => any[]];
+
 type PropertyPipelineEntry = {
   key: PropertyKey;
-  args?: any[];
+  args?: PipelineEntryArguments;
 };
 type FunctionPipelineEntry = {
   key: (...args: any[]) => any;
-  args?: any[];
+  args?: PipelineEntryArguments;
 };
 type FallbackPipelineEntry = {
   fallback: any;
@@ -39,22 +45,23 @@ type Pipeline = PipelineEntry[];
 /**
  * Helper to access a property on the previous value safely.
  */
-const accessProperty = (value: any, key: PropertyKey) => {
+const getProperty = (value: any, key: PropertyKey) => {
   return value?.[key] ?? undefined;
 };
 
 /**
- * If the fallback is a function, call it with the last value and return the result.
- * Otherwise, return the fallback as is.
+ * Helper to get the arguments to pass to a function.
  */
-const getFallback = (fallback: any, lastValue: any) => {
-  return F.call(fallback, fallback, lastValue);
+const getArguments = (args: PipelineEntryArguments): any[] => {
+  const finalArgs = args.length === 1 && F.is(args[0]) ? args[0]() : args;
+  return Array.isArray(finalArgs) ? finalArgs : [finalArgs];
 };
 
 class Pipe {
   // Properties that can't be used via the proxy syntax as they're used to implement the piping mechanism
   static readonly protectedProperties: PropertyKey[] = [
     "run",
+    "fallback",
     "pipe",
     "pipeline",
     "protectedProperties",
@@ -75,7 +82,7 @@ class Pipe {
    * If the value is a method, the arguments are passed to it.
    * If a function is passed, the first argument is the previous value and the rest are passed to the function.
    */
-  pipe(key: LogicPipelineEntry["key"], ...args: any[]): Pipe {
+  pipe(key: LogicPipelineEntry["key"], ...args: PipelineEntryArguments): Pipe {
     // FunctionPipelineEntry
     if (F.is(key)) {
       return new Pipe(...this.pipeline, { key, args });
@@ -100,6 +107,9 @@ class Pipe {
     return new Pipe(...this.pipeline, { fallback });
   }
 
+  /**
+   * Runs the pipeline using the provided input as the initial value.
+   */
   run(input: any) {
     let output: any = input;
 
@@ -115,17 +125,17 @@ class Pipe {
       const { key, args = [] } = entry;
 
       if (F.is(key)) {
-        output = key(output, ...args);
+        output = key(output, ...getArguments(args));
         continue;
       }
 
       // If arguments are provided it means it's aimed to be called
       if (args?.length) {
-        const method = accessProperty(output, key);
+        const method = getProperty(output, key);
 
         // so we call it with the arguments if it's a function
         if (F.is(method)) {
-          output = method.call(output, ...args);
+          output = method.call(output, ...getArguments(args));
         }
 
         // but if it's not a function, we use the fallback as a function call was intended
@@ -134,7 +144,7 @@ class Pipe {
 
       // If no arguments are provided, it might be a simple property access or an argumentless method call
       else {
-        const value = accessProperty(output, key);
+        const value = getProperty(output, key);
 
         // This means that if the value is a function we call it without arguments, otherwise we use as is
         // If either the value itself or its return value when it's a function is undefined, we use the fallback
@@ -154,7 +164,15 @@ const pipe = new Pipe()
   .pipe("join", ":")
   .fallback(3)
   .pipe((prev) => prev * 3)
-  .pipe((prev, n: number) => prev * n, 3);
+  .pipe(
+    (prev, n: number) => prev * n,
+    () => 3
+  )
+  .pipe(
+    (prev, ...args) => args.reduce((acc, curr) => acc + curr, prev),
+    () => [2, 3, 4]
+  )
+  .pipe("toString");
 
 console.log(
   pipe.run("hello world")
