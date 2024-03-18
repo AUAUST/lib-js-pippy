@@ -33,6 +33,10 @@
     "typescript": "^5.4.2",
     "vitest": "^1.4.0"
   },
+  "files": [
+    "dist",
+    "src"
+  ],
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/esm/index.d.ts",
