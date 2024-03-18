@@ -1,0 +1,18 @@
+{
+  "name": "@auaust/pippy",
+  "version": "0.0.0",
+  "description": "Create pipelines, chains and sequences of functions with ease.",
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": {
+    "email": "aurian@auaust.ch",
+    "name": "Aurian Aubert",
+    "url": "https://auaust.ch"
+  },
+  "packageManager": "pnpm@8.15.4"
+}
