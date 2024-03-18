@@ -20,9 +20,7 @@ const wrap = (function () {
   };
 })();
 
-/**
- * The properties that can't be used via the proxy syntax as they're used to implement the piping mechanism.
- */
+/** The properties that can't be used via the proxy syntax as they're used to implement the piping mechanism. */
 type ProtectedProperty = (typeof protectedProperties)[number];
 
 /**
@@ -36,11 +34,13 @@ type PropertyPipelineEntry = {
   action: PropertyKey;
   args?: PipelineEntryArguments;
 };
+
 /** A pipeline entry that is used to call a function with the previous value. */
 type FunctionPipelineEntry = {
   action: (...args: any[]) => any;
   args?: PipelineEntryArguments;
 };
+
 /** A pipeline entry that provides a fallback value if the pipeline reaches an undefined value. */
 type FallbackPipelineEntry = {
   fallback: any;
@@ -48,22 +48,19 @@ type FallbackPipelineEntry = {
 
 /** A pipeline entry that is used to apply logic to the previous value. */
 type LogicPipelineEntry = PropertyPipelineEntry | FunctionPipelineEntry;
+
 /** Any pipeline entry. */
 type PipelineEntry = LogicPipelineEntry | FallbackPipelineEntry;
 
 /** A list of pipeline entries to be executed in order. */
 type Pipeline = PipelineEntry[];
 
-/**
- * Helper to access a property on the previous value safely.
- */
+/** Helper to access a property on the previous value safely. */
 const getProperty = (value: any, property: PropertyKey) => {
   return value?.[property] ?? undefined;
 };
 
-/**
- * Helper to get the arguments to pass to a function.
- */
+/** Helper to get the arguments to pass to a function. */
 const getArguments = (args: PipelineEntryArguments): any[] => {
   const finalArgs = args.length === 1 && F.is(args[0]) ? args[0]() : args;
   return Array.isArray(finalArgs) ? finalArgs : [finalArgs];
@@ -79,7 +76,7 @@ const protectedProperties = [
 
 class Pipe extends Function {
   /**
-   * Properties that can't be used via the proxy syntax as they're used to implement the piping mechanism
+   * Properties that can't be used via the proxy syntax as they're used to implement the piping mechanism.
    * @internal
    */
   static readonly protectedProperties = O.freeze(
@@ -138,7 +135,6 @@ class Pipe extends Function {
     let output: any = input;
 
     for (const entry of this.pipeline) {
-      // If the value is a fallback, we only apply it if the value is nullish but always continue to the next entry
       if ("fallback" in entry) {
         if (P.isNullish(output)) output = entry.fallback;
         continue;
@@ -158,24 +154,15 @@ class Pipe extends Function {
         continue;
       }
 
-      // If arguments are provided it means it's aimed to be called
       if (args?.length) {
         const method = getProperty(output, action);
 
-        // so we call it with the arguments if it's a function
-        if (F.is(method)) {
-          output = method.call(output, ...getArguments(args));
-        }
-
-        // but if it's not a function, we use the fallback as a function call was intended
+        if (F.is(method)) output = method.call(output, ...getArguments(args));
         else output = undefined;
 
         continue;
       }
 
-      // If no arguments are provided, it might be a simple property access or an argumentless method call
-      // This means that if the value is a function we call it without arguments, otherwise we use as is
-      // If either the value itself or its return value when it's a function is undefined, we use the fallback
       const value = getProperty(output, action);
 
       try {
@@ -188,52 +175,5 @@ class Pipe extends Function {
     return output;
   }
 }
-
-const obj = {
-  foo: (arg) => {
-    return arg + arg;
-  },
-};
-
-// const pipe = new Pipe().foo("baz").toUpperCase();
-const pipe = new Pipe().valueOf().toString().slice(0, 3).fallback("foo");
-
-console.log(pipe.run(obj));
-
-// const pipe = new Pipe()
-//   .pipe((prev) => prev + 1)
-//   .toString.pipe((prev) => prev * 2)
-//   .pipe("toExponential")
-//   .fallback(3);
-
-// // .pipe("toUpperCase")
-// // .pipe("split", " ")
-// // .pipe("join", "-")
-// // .pipe("fooBar")
-// // .pipe("join", ":")
-// // .fallback(3)
-// // .pipe(() => {
-// //   throw new Error("error");
-// // })
-// // .fallback(4)
-// // .pipe((prev) => prev * 3)
-// // .pipe(
-// //   (prev, n: number) => prev * n,
-// //   () => 3
-// // )
-// // .pipe(
-// //   (prev, ...args) => args.reduce((acc, curr) => acc + curr, prev),
-// //   () => [2, 3, 4]
-// // )
-// // .pipe("toString");
-
-// console.log(
-//   // pipe.run(1),
-//   // pipe.run(10),
-//   // pipe.run(""),
-//   pipe.run(undefined)
-
-//   // pipe.run(3)
-// );
 
 export { Pipe };
