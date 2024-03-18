@@ -1,6 +1,6 @@
 {
   "name": "@auaust/pippy",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Create pipelines, chains and sequences of functions with ease.",
   "license": "GPL-3.0-only",
   "type": "module",
