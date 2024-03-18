@@ -29,18 +29,18 @@ type ProtectedProperty = (typeof protectedProperties)[number];
  * The arguments that can be passed to a pipeline entry.
  * It's either an array of arguments or a function that takes the previous value and returns an array of arguments.
  */
-type PipelineEntryArguments = any[] | [(value: any) => any[]];
+type PipelineArguments = any[] | [(value: any) => any[]];
 
 /** A pipeline entry that is used to access a property on the previous value. */
 type PropertyPipelineEntry = {
   action: PropertyKey;
-  args?: PipelineEntryArguments;
+  args?: PipelineArguments;
 };
 
 /** A pipeline entry that is used to call a function with the previous value. */
 type FunctionPipelineEntry = {
   action: (...args: any[]) => any;
-  args?: PipelineEntryArguments;
+  args?: PipelineArguments;
 };
 
 /** A pipeline entry that provides a fallback value if the pipeline reaches an undefined value. */
@@ -63,7 +63,7 @@ const getProperty = (value: any, property: PropertyKey) => {
 };
 
 /** Helper to get the arguments to pass to a function. */
-const getArguments = (value: any, args: PipelineEntryArguments): any[] => {
+const getArguments = (value: any, args: PipelineArguments): any[] => {
   const finalArgs = args.length === 1 && F.is(args[0]) ? args[0](value) : args;
   return Array.isArray(finalArgs) ? finalArgs : [finalArgs];
 };
@@ -106,7 +106,7 @@ const Pipe = (function () {
      */
     pipe(
       action: LogicPipelineEntry["action"],
-      ...args: PipelineEntryArguments
+      ...args: PipelineArguments
     ): Pipe {
       // FunctionPipelineEntry
       if (F.is(action)) {
@@ -195,15 +195,5 @@ const Pipe = (function () {
 
   return new Proxy(Pipe, {});
 })();
-
-console.log(
-  new Pipe().call("1", "2", "3").run((...args) => "meep " + args.join(" ")),
-  new Pipe()
-    .pipe("call", (...args) => {
-      console.log(args);
-      return ["1", "2", "3"];
-    })
-    .run((...args) => "meep " + args.join(" "))
-);
 
 export { Pipe };
