@@ -1,33 +1,24 @@
 import { F, N, O, P, S } from "@auaust/primitive-kit";
 
-const handler: ProxyHandler<Pipe> = {
-  get(target, prop, receiver) {
-    if (Pipe.protectedProperties.includes(prop as ProtectedProperty))
-      return Reflect.get(target, prop, receiver);
+const wrap = (function () {
+  const handler: ProxyHandler<Pipe> = {
+    get(target, prop, receiver) {
+      if (Pipe.protectedProperties.includes(prop as ProtectedProperty))
+        return Reflect.get(target, prop, receiver);
 
-    console.log("get", prop, target.pipe(prop as any));
+      return new Pipe(...target.pipeline, { action: prop });
+    },
+    apply(target, _, args) {
+      const last = target.pipeline[target.pipeline.length - 1];
+      if (last && "action" in last) last.args = args;
+      return wrap(target);
+    },
+  };
 
-    return new Pipe(...target.pipeline, { action: prop });
-  },
-  apply(target, thisArg, args) {
-    console.log("apply", args);
-    return () => console.log("hehe");
-    return Reflect.apply(target, thisArg, args);
-  },
-  has(target, prop) {
-    console.log("has", prop);
-    return Reflect.has(target, prop);
-  },
-  construct(target, args, newTarget) {
-    console.log("construct", args);
-    return Reflect.construct(target, args, newTarget);
-  },
-  defineProperty(target, prop, descriptor) {
-    console.log("defineProperty", prop, descriptor);
-    return Reflect.defineProperty(target, prop, descriptor);
-  },
-};
-const wrapPipe = (pipe: Pipe) => new Proxy(pipe, handler);
+  return function (pipe: Pipe) {
+    return new Proxy(pipe, handler);
+  };
+})();
 
 /**
  * The properties that can't be used via the proxy syntax as they're used to implement the piping mechanism.
@@ -86,7 +77,7 @@ const protectedProperties = [
   "run",
 ] as const;
 
-class Pipe {
+class Pipe extends Function {
   /**
    * Properties that can't be used via the proxy syntax as they're used to implement the piping mechanism
    * @internal
@@ -99,8 +90,9 @@ class Pipe {
   readonly pipeline: Pipeline;
 
   constructor(...pipeline: Pipeline) {
+    super();
     this.pipeline = pipeline;
-    return wrapPipe(this);
+    return wrap(this);
   }
 
   /**
@@ -197,7 +189,16 @@ class Pipe {
   }
 }
 
-console.log(new Pipe().pipe(() => 1).foo.bar.baz.__proxy__);
+const obj = {
+  foo: (arg) => {
+    return arg + arg;
+  },
+};
+
+// const pipe = new Pipe().foo("baz").toUpperCase();
+const pipe = new Pipe().valueOf().toString().slice(0, 3).fallback("foo");
+
+console.log(pipe.run(obj));
 
 // const pipe = new Pipe()
 //   .pipe((prev) => prev + 1)
