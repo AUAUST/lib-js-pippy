@@ -1,4 +1,4 @@
-import { F, N, S } from "@auaust/primitive-kit";
+import { F, N, P, S } from "@auaust/primitive-kit";
 
 const handler: ProxyHandler<Pipe> = {
   get(target, prop, receiver) {
@@ -114,13 +114,13 @@ class Pipe {
     let output: any = input;
 
     for (const entry of this.pipeline) {
+      // If the value is a fallback, we only apply it if the value is nullish but always continue to the next entry
       if ("fallback" in entry) {
-        if (output === undefined) {
-          output = entry.fallback;
-        }
-
+        if (P.isNullish(output)) output = entry.fallback;
         continue;
       }
+
+      if (P.isNullish(output)) continue;
 
       const { key, args = [] } = entry;
 
@@ -130,6 +130,7 @@ class Pipe {
         } catch {
           output = undefined;
         }
+
         continue;
       }
 
@@ -165,30 +166,38 @@ class Pipe {
 }
 
 const pipe = new Pipe()
-  .pipe("toUpperCase")
-  .pipe("split", " ")
-  .pipe("join", "-")
-  .pipe("fooBar")
-  .pipe("join", ":")
-  .fallback(3)
-  .pipe(() => {
-    throw new Error("error");
-  })
-  .fallback(4)
-  .pipe((prev) => prev * 3)
-  .pipe(
-    (prev, n: number) => prev * n,
-    () => 3
-  )
-  .pipe(
-    (prev, ...args) => args.reduce((acc, curr) => acc + curr, prev),
-    () => [2, 3, 4]
-  )
-  .pipe("toString");
+  .pipe((prev) => prev + 1)
+  .pipe((prev) => prev * 2)
+  .pipe("toExponential")
+  .fallback(3);
+
+// .pipe("toUpperCase")
+// .pipe("split", " ")
+// .pipe("join", "-")
+// .pipe("fooBar")
+// .pipe("join", ":")
+// .fallback(3)
+// .pipe(() => {
+//   throw new Error("error");
+// })
+// .fallback(4)
+// .pipe((prev) => prev * 3)
+// .pipe(
+//   (prev, n: number) => prev * n,
+//   () => 3
+// )
+// .pipe(
+//   (prev, ...args) => args.reduce((acc, curr) => acc + curr, prev),
+//   () => [2, 3, 4]
+// )
+// .pipe("toString");
 
 console.log(
-  pipe.run("hello world"),
+  // pipe.run(1),
+  // pipe.run(10),
+  // pipe.run(""),
   pipe.run(undefined)
+
   // pipe.run(3)
 );
 
