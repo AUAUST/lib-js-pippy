@@ -1,24 +1,38 @@
-import { F, N, P, S } from "@auaust/primitive-kit";
+import { F, N, O, P, S } from "@auaust/primitive-kit";
 
 const handler: ProxyHandler<Pipe> = {
   get(target, prop, receiver) {
-    return target[prop];
-
-    if (Pipe.protectedProperties.includes(prop)) {
+    if (Pipe.protectedProperties.includes(prop as ProtectedProperty))
       return Reflect.get(target, prop, receiver);
-    }
 
-    target.pipeline.push({ key: prop });
+    console.log("get", prop, target.pipe(prop as any));
 
-    return wrapPipe(target);
+    return new Pipe(...target.pipeline, { action: prop });
   },
   apply(target, thisArg, args) {
-    const lastEntry = target.pipeline[target.pipeline.length - 1]!;
-    lastEntry.args = args;
-    return wrapPipe(target);
+    console.log("apply", args);
+    return () => console.log("hehe");
+    return Reflect.apply(target, thisArg, args);
+  },
+  has(target, prop) {
+    console.log("has", prop);
+    return Reflect.has(target, prop);
+  },
+  construct(target, args, newTarget) {
+    console.log("construct", args);
+    return Reflect.construct(target, args, newTarget);
+  },
+  defineProperty(target, prop, descriptor) {
+    console.log("defineProperty", prop, descriptor);
+    return Reflect.defineProperty(target, prop, descriptor);
   },
 };
 const wrapPipe = (pipe: Pipe) => new Proxy(pipe, handler);
+
+/**
+ * The properties that can't be used via the proxy syntax as they're used to implement the piping mechanism.
+ */
+type ProtectedProperty = (typeof protectedProperties)[number];
 
 /**
  * The arguments that can be passed to a pipeline entry.
@@ -26,27 +40,34 @@ const wrapPipe = (pipe: Pipe) => new Proxy(pipe, handler);
  */
 type PipelineEntryArguments = any[] | [(value: any) => any[]];
 
+/** A pipeline entry that is used to access a property on the previous value. */
 type PropertyPipelineEntry = {
-  key: PropertyKey;
+  action: PropertyKey;
   args?: PipelineEntryArguments;
 };
+/** A pipeline entry that is used to call a function with the previous value. */
 type FunctionPipelineEntry = {
-  key: (...args: any[]) => any;
+  action: (...args: any[]) => any;
   args?: PipelineEntryArguments;
 };
+/** A pipeline entry that provides a fallback value if the pipeline reaches an undefined value. */
 type FallbackPipelineEntry = {
   fallback: any;
 };
+
+/** A pipeline entry that is used to apply logic to the previous value. */
 type LogicPipelineEntry = PropertyPipelineEntry | FunctionPipelineEntry;
+/** Any pipeline entry. */
 type PipelineEntry = LogicPipelineEntry | FallbackPipelineEntry;
 
+/** A list of pipeline entries to be executed in order. */
 type Pipeline = PipelineEntry[];
 
 /**
  * Helper to access a property on the previous value safely.
  */
-const getProperty = (value: any, key: PropertyKey) => {
-  return value?.[key] ?? undefined;
+const getProperty = (value: any, property: PropertyKey) => {
+  return value?.[property] ?? undefined;
 };
 
 /**
@@ -57,22 +78,30 @@ const getArguments = (args: PipelineEntryArguments): any[] => {
   return Array.isArray(finalArgs) ? finalArgs : [finalArgs];
 };
 
+const protectedProperties = [
+  "fallback",
+  "pipe",
+  "pipeline",
+  "protectedProperties",
+  "run",
+] as const;
+
 class Pipe {
-  // Properties that can't be used via the proxy syntax as they're used to implement the piping mechanism
-  static readonly protectedProperties: PropertyKey[] = [
-    "run",
-    "fallback",
-    "pipe",
-    "pipeline",
-    "protectedProperties",
-  ];
+  /**
+   * Properties that can't be used via the proxy syntax as they're used to implement the piping mechanism
+   * @internal
+   */
+  static readonly protectedProperties = O.freeze(
+    protectedProperties
+  ) as readonly ProtectedProperty[];
+
+  /** @internal */
+  readonly pipeline: Pipeline;
 
   constructor(...pipeline: Pipeline) {
     this.pipeline = pipeline;
     return wrapPipe(this);
   }
-
-  readonly pipeline: Pipeline;
 
   /**
    * Registers a new step in the pipeline, either by specifying a property to access on the previous value
@@ -82,15 +111,18 @@ class Pipe {
    * If the value is a method, the arguments are passed to it.
    * If a function is passed, the first argument is the previous value and the rest are passed to the function.
    */
-  pipe(key: LogicPipelineEntry["key"], ...args: PipelineEntryArguments): Pipe {
+  pipe(
+    action: LogicPipelineEntry["action"],
+    ...args: PipelineEntryArguments
+  ): Pipe {
     // FunctionPipelineEntry
-    if (F.is(key)) {
-      return new Pipe(...this.pipeline, { key, args });
+    if (F.is(action)) {
+      return new Pipe(...this.pipeline, { action, args });
     }
 
     // PropertyPipelineEntry
-    if (N.is(key) || S.is(key) || typeof key === "symbol") {
-      return new Pipe(...this.pipeline, { key, args });
+    if (N.is(action) || S.is(action) || typeof action === "symbol") {
+      return new Pipe(...this.pipeline, { action, args });
     }
 
     throw new Error(
@@ -122,11 +154,11 @@ class Pipe {
 
       if (P.isNullish(output)) continue;
 
-      const { key, args = [] } = entry;
+      const { action, args = [] } = entry;
 
-      if (F.is(key)) {
+      if (F.is(action)) {
         try {
-          output = key(output, ...getArguments(args));
+          output = action(output, ...getArguments(args));
         } catch {
           output = undefined;
         }
@@ -136,7 +168,7 @@ class Pipe {
 
       // If arguments are provided it means it's aimed to be called
       if (args?.length) {
-        const method = getProperty(output, key);
+        const method = getProperty(output, action);
 
         // so we call it with the arguments if it's a function
         if (F.is(method)) {
@@ -152,7 +184,7 @@ class Pipe {
       // If no arguments are provided, it might be a simple property access or an argumentless method call
       // This means that if the value is a function we call it without arguments, otherwise we use as is
       // If either the value itself or its return value when it's a function is undefined, we use the fallback
-      const value = getProperty(output, key);
+      const value = getProperty(output, action);
 
       try {
         output = F.is(value) ? value.call(output) : value;
@@ -165,40 +197,42 @@ class Pipe {
   }
 }
 
-const pipe = new Pipe()
-  .pipe((prev) => prev + 1)
-  .pipe((prev) => prev * 2)
-  .pipe("toExponential")
-  .fallback(3);
+console.log(new Pipe().pipe(() => 1).foo.bar.baz.__proxy__);
 
-// .pipe("toUpperCase")
-// .pipe("split", " ")
-// .pipe("join", "-")
-// .pipe("fooBar")
-// .pipe("join", ":")
-// .fallback(3)
-// .pipe(() => {
-//   throw new Error("error");
-// })
-// .fallback(4)
-// .pipe((prev) => prev * 3)
-// .pipe(
-//   (prev, n: number) => prev * n,
-//   () => 3
-// )
-// .pipe(
-//   (prev, ...args) => args.reduce((acc, curr) => acc + curr, prev),
-//   () => [2, 3, 4]
-// )
-// .pipe("toString");
+// const pipe = new Pipe()
+//   .pipe((prev) => prev + 1)
+//   .toString.pipe((prev) => prev * 2)
+//   .pipe("toExponential")
+//   .fallback(3);
 
-console.log(
-  // pipe.run(1),
-  // pipe.run(10),
-  // pipe.run(""),
-  pipe.run(undefined)
+// // .pipe("toUpperCase")
+// // .pipe("split", " ")
+// // .pipe("join", "-")
+// // .pipe("fooBar")
+// // .pipe("join", ":")
+// // .fallback(3)
+// // .pipe(() => {
+// //   throw new Error("error");
+// // })
+// // .fallback(4)
+// // .pipe((prev) => prev * 3)
+// // .pipe(
+// //   (prev, n: number) => prev * n,
+// //   () => 3
+// // )
+// // .pipe(
+// //   (prev, ...args) => args.reduce((acc, curr) => acc + curr, prev),
+// //   () => [2, 3, 4]
+// // )
+// // .pipe("toString");
 
-  // pipe.run(3)
-);
+// console.log(
+//   // pipe.run(1),
+//   // pipe.run(10),
+//   // pipe.run(""),
+//   pipe.run(undefined)
+
+//   // pipe.run(3)
+// );
 
 export { Pipe };
