@@ -1,9 +1,13 @@
-import { describe, expect, test } from "vitest";
+import { expect, test } from "vitest";
 
-import { Pippy } from "~/index";
+import { Pipe } from "~/pipe";
 
-describe("Pippy", () => {
-  test("should say hello", () => {
-    expect(Pippy()).toBe("Greetings from Pippy!");
-  });
+test("test", () => {
+  const pipe = Pipe.pipe<string>("toUpperCase")
+    .pipe("split", " ")
+    .pipe("join", "-")
+    .pipe("split", "")
+    .pipe("join", "_");
+
+  expect(pipe.run("hello world")).toBe("H_E_L_L_O_-_W_O_R_L_D");
 });

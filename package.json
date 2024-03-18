@@ -49,5 +49,8 @@
       "types": "./dist/esm/index.d.ts",
       "default": "./dist/cjs/index.js"
     }
+  },
+  "dependencies": {
+    "@auaust/primitive-kit": "^0.20.0"
   }
 }
