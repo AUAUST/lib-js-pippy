@@ -125,7 +125,11 @@ class Pipe {
       const { key, args = [] } = entry;
 
       if (F.is(key)) {
-        output = key(output, ...getArguments(args));
+        try {
+          output = key(output, ...getArguments(args));
+        } catch {
+          output = undefined;
+        }
         continue;
       }
 
@@ -140,15 +144,19 @@ class Pipe {
 
         // but if it's not a function, we use the fallback as a function call was intended
         else output = undefined;
+
+        continue;
       }
 
       // If no arguments are provided, it might be a simple property access or an argumentless method call
-      else {
-        const value = getProperty(output, key);
+      // This means that if the value is a function we call it without arguments, otherwise we use as is
+      // If either the value itself or its return value when it's a function is undefined, we use the fallback
+      const value = getProperty(output, key);
 
-        // This means that if the value is a function we call it without arguments, otherwise we use as is
-        // If either the value itself or its return value when it's a function is undefined, we use the fallback
-        output = (F.is(value) ? value.call(output) : value) ?? undefined;
+      try {
+        output = F.is(value) ? value.call(output) : value;
+      } catch {
+        output = undefined;
       }
     }
 
@@ -163,6 +171,10 @@ const pipe = new Pipe()
   .pipe("fooBar")
   .pipe("join", ":")
   .fallback(3)
+  .pipe(() => {
+    throw new Error("error");
+  })
+  .fallback(4)
   .pipe((prev) => prev * 3)
   .pipe(
     (prev, n: number) => prev * n,
@@ -175,7 +187,8 @@ const pipe = new Pipe()
   .pipe("toString");
 
 console.log(
-  pipe.run("hello world")
+  pipe.run("hello world"),
+  pipe.run(undefined)
   // pipe.run(3)
 );
 
