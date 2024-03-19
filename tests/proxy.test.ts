@@ -24,6 +24,7 @@ describe("Proxied Pipes", () => {
   });
 
   test("should handle property access as a pipe registration", () => {
+    // @ts-expect-error
     const pipeline = new Pipe().toUpperCase().split(" ").join("-");
 
     expect(pipeline).toBeDefined();
@@ -32,7 +33,9 @@ describe("Proxied Pipes", () => {
   });
 
   test("should register a property access regardless of it being called", () => {
+    // @ts-expect-error
     const pipeline1 = new Pipe().toUpperCase().toLowerCase().trim();
+    // @ts-expect-error
     const pipeline2 = new Pipe().toUpperCase.toLowerCase.trim;
 
     expect(pipeline1.run(" Hello World ")).toBe("hello world");
@@ -45,6 +48,7 @@ describe("Proxied Pipes", () => {
     });
 
     const object = { customMethod: fn };
+    // @ts-expect-error
     const pipeline = new Pipe().customMethod(1, 2, 3);
 
     expect(pipeline.run(object)).toBe("We have 6 apples");
@@ -52,6 +56,7 @@ describe("Proxied Pipes", () => {
   });
 
   test("should be able to have a mix of default `pipe` and property access", () => {
+    // @ts-expect-error
     const pipeline = new Pipe().pipe("foo").fallback("fallback").toUpperCase();
 
     expect(pipeline.run(null)).toBe("FALLBACK");

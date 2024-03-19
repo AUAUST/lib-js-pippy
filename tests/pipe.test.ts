@@ -104,6 +104,7 @@ describe("Pipe", () => {
   });
 
   test("can be converted to a function", () => {
+    // @ts-expect-error
     const pipeline = new Pipe().toUpperCase().split(" ").join("-").toFunction();
 
     expect(pipeline).toBeDefined();
@@ -112,10 +113,14 @@ describe("Pipe", () => {
   });
 
   test("should be able to pipe another pipeline", () => {
+    // @ts-expect-error // Will be fixed by the implementation of the types
     const pipeline1 = new Pipe().toUpperCase().replace("+", "");
+    // @ts-expect-error
     const pipeline2 = new Pipe().trim();
     const pipeline3 = new Pipe()
+      // @ts-expect-error
       .toExponential()
+      // @ts-expect-error
       .pipe((v) => " " + v + " ")
       .pipe(pipeline1)
       .pipe(pipeline2);
@@ -158,6 +163,7 @@ describe("Pipe", () => {
         },
       };
 
+      // @ts-expect-error
       const pipeline = new Pipe().method();
 
       expect(pipeline.run(object)).toBe("Always cool the first time"); // first call is fine

@@ -4,9 +4,13 @@ import { Pipe } from "~/index";
 
 describe("Wrong usage of Pipe", () => {
   test("should throw when trying to build a pipeline with invalid properties", () => {
+    // @ts-expect-error
     expect(() => new Pipe().pipe()).toThrow();
+    // @ts-expect-error
     expect(() => new Pipe().pipe({})).toThrow();
+    // @ts-expect-error
     expect(() => new Pipe().pipe(null)).toThrow();
+    // @ts-expect-error
     expect(() => new Pipe().pipe(undefined)).toThrow();
   });
 
