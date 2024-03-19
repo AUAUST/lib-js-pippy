@@ -1,6 +1,6 @@
 import { F, N, O, P, S } from "@auaust/primitive-kit";
 import type {
-  LogicPipelineEntry,
+  LogicalCoupling,
   PipeInstance,
   Pipeline,
   PipelineArguments,
@@ -79,7 +79,7 @@ const Pipe = (function () {
      * If a function is passed, the first argument is the previous value and the rest are passed to the function.
      */
     pipe(
-      action: LogicPipelineEntry["action"] | Pipe,
+      action: LogicalCoupling["action"] | Pipe,
       ...args: PipelineArguments
     ): Pipe {
       // FunctionPipelineEntry
