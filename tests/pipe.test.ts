@@ -75,4 +75,21 @@ describe("Pipe", () => {
       3
     );
   });
+
+  test("should be extendable", () => {
+    const pipeline1 = new Pipe().pipe("toLowerCase").pipe("trim");
+
+    expect(pipeline1.run(" Hello World ")).toBe("hello world");
+
+    const pipeline2 = pipeline1.pipe("slice", 1, 5);
+
+    expect(pipeline1.run(" Hello World ")).toBe("hello world");
+    expect(pipeline2.run(" Hello World ")).toBe("ello");
+
+    const pipeline3 = pipeline2.pipe((value) => value + value);
+
+    expect(pipeline1.run(" Hello World ")).toBe("hello world");
+    expect(pipeline2.run(" Hello World ")).toBe("ello");
+    expect(pipeline3.run(" Hello World ")).toBe("elloello");
+  });
 });
