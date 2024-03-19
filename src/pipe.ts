@@ -1,5 +1,10 @@
 import { F, N, O, P, S } from "@auaust/primitive-kit";
-import type { FunctionCoupling, Pipeline, PipelineArguments } from "~/types";
+import type {
+  FunctionCoupling,
+  Pipeline,
+  PipelineArguments,
+  PropertyCouplingArguments,
+} from "~/types";
 
 /** The properties that can't be used via the proxy syntax as they're used to implement the piping mechanism. */
 type ProtectedProperty = (typeof protectedProperties)[number];
@@ -75,14 +80,19 @@ class Pipe<I = unknown, O = I> extends Function {
    * If the value is a method, the arguments are passed to it.
    * If a function is passed, the first argument is the previous value and the rest are passed to the function.
    */
+
+  // Pipe a property access
   pipe<T extends keyof O>(
     action: T,
-    ...args: O[T] extends (...args: infer Args) => any ? Args : unknown[]
+    ...args: NonNullable<PropertyCouplingArguments<O, T>>
   ): Pipe<I, O[T] extends (...args: any[]) => infer R ? R : O[T]>;
-  pipe<T extends FunctionCoupling["action"], A extends Parameters<T>>(
-    action: T,
-    ...args: A
-  ): Pipe<I, ReturnType<T>>;
+
+  // Pipe a function
+  pipe<T extends FunctionCoupling<O>, Fn extends T["action"]>(
+    action: Fn,
+    ...args: NonNullable<T["args"]>
+  ): Pipe<I, ReturnType<T["action"]>>;
+
   pipe(
     action: Pipe | PropertyKey | ((value: any) => any),
     ...args: PipelineArguments
@@ -205,12 +215,6 @@ const WrappedPipe = new Proxy(Pipe, {
     return new target(...args);
   },
 });
-
-const pipe = new Pipe<number>()
-  .pipe("toExponential")
-  .pipe("charAt", 2)
-  .pipe("charCodeAt", 0)
-  .pipe("toPrecision", 1);
 
 export { WrappedPipe as Pipe };
 export type { ProtectedProperty };

@@ -5,15 +5,35 @@
 type PipelineArguments = any[] | [(value: any) => any[]];
 
 /** A coupling that is used to access a property on the previous value. */
-type PropertyCoupling = {
-  action: PropertyKey;
-  args?: PipelineArguments;
+type PropertyCoupling<
+  Value extends unknown = any,
+  Property extends keyof Value = keyof Value
+> = {
+  action: Property;
+  args?: PropertyCouplingArguments<Value, Property>;
 };
 
+type ArgumentsOrCallback<Arguments extends any[] = unknown[]> =
+  Arguments["length"] extends 1
+    ? Arguments | [() => Arguments] | [() => Arguments[0]]
+    : Arguments | [() => Arguments];
+
+type PropertyCouplingArguments<
+  Value extends unknown,
+  Property extends unknown
+> = Property extends keyof Value
+  ? Value[Property] extends (...args: infer Arguments) => any
+    ? ArgumentsOrCallback<Arguments>
+    : ArgumentsOrCallback
+  : ArgumentsOrCallback;
+
 /** A coupling that is used to call a function with the previous value. */
-type FunctionCoupling = {
-  action: (...args: any[]) => any;
-  args?: PipelineArguments;
+type FunctionCoupling<
+  Value extends unknown = any,
+  Fn = (prev: Value, ...args: any[]) => any
+> = {
+  action: Fn;
+  args?: PropertyCouplingArguments<Value, Fn>;
 };
 
 /** A coupling that provides a fallback value if the pipeline reaches an undefined value. */
@@ -38,4 +58,5 @@ export type {
   Pipeline,
   PipelineArguments,
   PropertyCoupling,
+  PropertyCouplingArguments,
 };
