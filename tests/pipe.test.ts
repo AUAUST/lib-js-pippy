@@ -100,4 +100,18 @@ describe("Pipe", () => {
     expect(typeof pipeline).toBe("function");
     expect(pipeline("hello world")).toBe("HELLO-WORLD");
   });
+
+  test("should be able to pipe another pipeline", () => {
+    const pipeline1 = new Pipe().toUpperCase().replace("+", "");
+    const pipeline2 = new Pipe().trim();
+    const pipeline3 = new Pipe()
+      .toExponential()
+      .pipe((v) => " " + v + " ")
+      .pipe(pipeline1)
+      .pipe(pipeline2);
+
+    expect(pipeline3).toBeDefined();
+    expect(pipeline3).toBeInstanceOf(Pipe);
+    expect(pipeline3.run(123)).toBe("1.23E2");
+  });
 });

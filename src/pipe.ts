@@ -106,11 +106,17 @@ const Pipe = (function () {
      * If a function is passed, the first argument is the previous value and the rest are passed to the function.
      */
     pipe(
-      action: LogicPipelineEntry["action"],
+      action: LogicPipelineEntry["action"] | Pipe,
       ...args: PipelineArguments
     ): Pipe {
       // FunctionPipelineEntry
       if (F.is(action)) {
+        if (action instanceof Pipe) {
+          return new Pipe(...this.pipeline, {
+            action: action.toFunction(),
+          });
+        }
+
         return new Pipe(...this.pipeline, { action, args });
       }
 
@@ -136,6 +142,16 @@ const Pipe = (function () {
     /**
      * If the previous value is a function, it's called with the provided arguments.
      * Otherwise, the previous value is returned.
+     *
+     * This makes it possible to have the pipeline call a function if the chain reaches one.
+     *
+     * @example ```ts
+     * const pipeline = new Pipe()
+     *   .pipe("toFunction") // We assume this method returns a function on the previous value
+     *   .call("hello", "world");
+     *
+     * pipeline.run(someObject) === someObject.toFunction()("hello", "world");
+     * ```
      */
     call(...args: any[]): Pipe {
       return new Pipe(...this.pipeline, {
