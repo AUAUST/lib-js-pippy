@@ -1,5 +1,11 @@
 # @auaust/pippy
 
+## 0.1.2
+
+### Patch Changes
+
+- 9d32c76: Test publish action
+
 ## 0.1.1
 
 ### Patch Changes
