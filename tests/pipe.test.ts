@@ -92,4 +92,12 @@ describe("Pipe", () => {
     expect(pipeline2.run(" Hello World ")).toBe("ello");
     expect(pipeline3.run(" Hello World ")).toBe("elloello");
   });
+
+  test("can be converted to a function", () => {
+    const pipeline = new Pipe().toUpperCase().split(" ").join("-").toFunction();
+
+    expect(pipeline).toBeDefined();
+    expect(typeof pipeline).toBe("function");
+    expect(pipeline("hello world")).toBe("HELLO-WORLD");
+  });
 });

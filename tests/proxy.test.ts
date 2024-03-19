@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vitest } from "vitest";
 
 import { Pipe } from "~/index";
 
@@ -37,6 +37,18 @@ describe("Proxied Pipes", () => {
 
     expect(pipeline1.run(" Hello World ")).toBe("hello world");
     expect(pipeline2.run(" Hello World ")).toBe(pipeline1.run(" Hello World "));
+  });
+
+  test("should register the arguments passed to a call", () => {
+    const fn = vitest.fn((...args: number[]) => {
+      return `We have ${args.reduce((a, b) => a + b, 0)} apples`;
+    });
+
+    const object = { customMethod: fn };
+    const pipeline = new Pipe().customMethod(1, 2, 3);
+
+    expect(pipeline.run(object)).toBe("We have 6 apples");
+    expect(fn).toHaveBeenCalledWith(1, 2, 3);
   });
 
   test("should be able to have a mix of default `pipe` and property access", () => {

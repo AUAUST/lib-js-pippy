@@ -75,6 +75,7 @@ const protectedProperties = [
   "pipeline",
   "protectedProperties",
   "run",
+  "toFunction",
 ] as const;
 
 const Pipe = (function () {
@@ -142,6 +143,13 @@ const Pipe = (function () {
           F.is(value) ? value(...getArguments(value, args)) : value,
         args,
       });
+    }
+
+    /**
+     * Returns the pipeline as a callable function, taking the initial value to run the pipeline with as a single argument.
+     */
+    toFunction() {
+      return (input: any) => this.run(input);
     }
 
     /**
