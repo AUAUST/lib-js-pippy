@@ -1,7 +1,3 @@
-import type { Pipe } from "~/index";
-
-type PipeInstance = InstanceType<typeof Pipe>;
-
 /**
  * The arguments that can be passed to a pipeline entry.
  * It's either an array of arguments or a function that takes the previous value and returns an array of arguments.
@@ -39,7 +35,6 @@ export type {
   FallbackCoupling,
   FunctionCoupling,
   LogicalCoupling,
-  PipeInstance,
   Pipeline,
   PipelineArguments,
   PropertyCoupling,
