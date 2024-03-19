@@ -1,5 +1,11 @@
 # @auaust/pippy
 
+## 0.1.1
+
+### Patch Changes
+
+- 04d116b: Force new version to publish on NPM
+
 ## 0.1.0
 
 ### Minor Changes
