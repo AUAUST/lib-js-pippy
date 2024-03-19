@@ -9,4 +9,14 @@ describe("Wrong usage of Pipe", () => {
     expect(() => new Pipe().pipe(null)).toThrow();
     expect(() => new Pipe().pipe(undefined)).toThrow();
   });
+
+  test("should return undefined when passing arguments to a property that's not a function", () => {
+    const object1 = { foo: "bar" };
+    const object2 = { foo: (...args: any[]) => args.join(" ") };
+
+    const pipeline = new Pipe().pipe("foo", "hello", "world");
+
+    expect(pipeline.run(object1)).toBe(undefined); // foo exists, but the presence of arguments means it was expected to be callable
+    expect(pipeline.run(object2)).toBe("hello world");
+  });
 });

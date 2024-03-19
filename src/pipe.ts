@@ -11,8 +11,9 @@ const wrap = (function () {
       return new Pipe(...target.pipeline, { action: prop });
     },
     apply(target, _, args) {
-      const last = target.pipeline[target.pipeline.length - 1];
-      if (last && "action" in last) last.args = args;
+      const pipeline = target.pipeline;
+      const last = pipeline && pipeline[pipeline.length - 1];
+      last && "action" in last && (last.args = args);
       return wrap(target);
     },
   };
