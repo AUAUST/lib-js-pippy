@@ -61,14 +61,12 @@ const Pipe = (function () {
       protectedProperties
     ) as readonly ProtectedProperty[];
 
+    constructor(...pipeline: Pipeline) {
+      return super(), (this.pipeline = pipeline), wrap(this);
+    }
+
     /** @internal */
     readonly pipeline: Pipeline;
-
-    constructor(...pipeline: Pipeline) {
-      super();
-      this.pipeline = pipeline;
-      return wrap(this);
-    }
 
     /**
      * Registers a new step in the pipeline, either by specifying a property to access on the previous value
@@ -190,7 +188,15 @@ const Pipe = (function () {
     }
   }
 
-  return new Proxy(Pipe, {});
+  return new Proxy(Pipe, {
+    get(target, prop, receiver) {
+      if (prop in target) return Reflect.get(target, prop, receiver);
+      return new target({ action: prop });
+    },
+    apply(target, _, args) {
+      return new target(...args);
+    },
+  });
 })();
 
 export { Pipe };

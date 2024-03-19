@@ -8,30 +8,30 @@ type PipeInstance = InstanceType<typeof Pipe>;
  */
 type PipelineArguments = any[] | [(value: any) => any[]];
 
-/** A pipeline entry that is used to access a property on the previous value. */
+/** A coupling that is used to access a property on the previous value. */
 type PropertyCoupling = {
   action: PropertyKey;
   args?: PipelineArguments;
 };
 
-/** A pipeline entry that is used to call a function with the previous value. */
+/** A coupling that is used to call a function with the previous value. */
 type FunctionCoupling = {
   action: (...args: any[]) => any;
   args?: PipelineArguments;
 };
 
-/** A pipeline entry that provides a fallback value if the pipeline reaches an undefined value. */
+/** A coupling that provides a fallback value if the pipeline reaches an undefined value. */
 type FallbackCoupling = {
   fallback: any;
 };
 
-/** A pipeline entry that is used to apply logic to the previous value. */
+/** A coupling that is used to apply logic to the previous value. */
 type LogicalCoupling = PropertyCoupling | FunctionCoupling;
 
-/** Any pipeline entry. */
+/** Any coupling. */
 type Coupling = LogicalCoupling | FallbackCoupling;
 
-/** A list of pipeline entries to be executed in order. */
+/** A list of couplings to be executed in order. */
 type Pipeline = Coupling[];
 
 export type {

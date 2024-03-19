@@ -2,7 +2,24 @@ import { describe, expect, test, vitest } from "vitest";
 
 import { Pipe } from "~/index";
 
-describe("Proxied Pipes", () => {
+describe("Proxied Pipe", () => {
+  test("should create pipes by accessing properties directly on the static `Pipe` class", () => {
+    // @ts-expect-error
+    const pipeline = Pipe.toUpperCase.split(" ").join("-");
+
+    expect(pipeline).toBeDefined();
+    expect(pipeline).toBeInstanceOf(Pipe);
+    expect(pipeline.run("hello world")).toBe("HELLO-WORLD");
+  });
+
+  test("should return a new `Pipe` instance when calling without `new`", () => {
+    // @ts-expect-error
+    const pipeline = Pipe();
+
+    expect(pipeline).toBeDefined();
+    expect(pipeline).toBeInstanceOf(Pipe);
+  });
+
   test("should not handle the protected properties as pipeline entries", () => {
     const pipeline = new Pipe();
 
