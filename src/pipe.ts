@@ -1,5 +1,5 @@
 import { F, N, O, P, S } from "@auaust/primitive-kit";
-import type { LogicalCoupling, Pipeline, PipelineArguments } from "~/types";
+import type { FunctionCoupling, Pipeline, PipelineArguments } from "~/types";
 
 /** The properties that can't be used via the proxy syntax as they're used to implement the piping mechanism. */
 type ProtectedProperty = (typeof protectedProperties)[number];
@@ -34,8 +34,8 @@ const wrap = (function () {
     },
   };
 
-  return function (pipe: Pipe) {
-    return new Proxy(pipe, handler);
+  return function <T extends Pipe>(pipe: T): T {
+    return new Proxy(pipe, handler) as T;
   };
 })();
 
@@ -51,7 +51,7 @@ const getArguments = (value: any, args: PipelineArguments): any[] => {
 };
 
 // const Pipe = (function () {
-class Pipe<Input = unknown, Output = unknown> extends Function {
+class Pipe<I = unknown, O = I> extends Function {
   /**
    * Properties that can't be used via the proxy syntax as they're used to implement the piping mechanism.
    * @internal
@@ -75,10 +75,18 @@ class Pipe<Input = unknown, Output = unknown> extends Function {
    * If the value is a method, the arguments are passed to it.
    * If a function is passed, the first argument is the previous value and the rest are passed to the function.
    */
+  pipe<T extends keyof O>(
+    action: T,
+    ...args: O[T] extends (...args: infer Args) => any ? Args : unknown[]
+  ): Pipe<I, O[T] extends (...args: any[]) => infer R ? R : O[T]>;
+  pipe<T extends FunctionCoupling["action"], A extends Parameters<T>>(
+    action: T,
+    ...args: A
+  ): Pipe<I, ReturnType<T>>;
   pipe(
-    action: LogicalCoupling["action"] | Pipe,
+    action: Pipe | PropertyKey | ((value: any) => any),
     ...args: PipelineArguments
-  ): Pipe {
+  ): Pipe<any, any> {
     // FunctionPipelineEntry
     if (F.is(action)) {
       if (action instanceof Pipe) {
@@ -87,12 +95,12 @@ class Pipe<Input = unknown, Output = unknown> extends Function {
         });
       }
 
-      return new Pipe(...this.pipeline, { action, args });
+      return new Pipe(...this.pipeline, { action: action, args });
     }
 
     // PropertyPipelineEntry
     if (N.is(action) || S.is(action) || typeof action === "symbol") {
-      return new Pipe(...this.pipeline, { action, args });
+      return new Pipe(...this.pipeline, { action: action, args });
     }
 
     throw new Error(
@@ -123,7 +131,7 @@ class Pipe<Input = unknown, Output = unknown> extends Function {
    * pipeline.run(someObject) === someObject.toFunction()("hello", "world");
    * ```
    */
-  call(...args: any[]): Pipe {
+  call(...args: any[]): Pipe<I, O> {
     return new Pipe(...this.pipeline, {
       action: (value: any) =>
         F.is(value) ? value(...getArguments(value, args)) : value,
@@ -134,14 +142,14 @@ class Pipe<Input = unknown, Output = unknown> extends Function {
   /**
    * Returns the pipeline as a callable function, taking the initial value to run the pipeline with as a single argument.
    */
-  toFunction() {
-    return (input: Input) => this.run(input);
+  toFunction(): (input: I) => O {
+    return (input: I) => this.run(input);
   }
 
   /**
    * Runs the pipeline using the provided input as the initial value.
    */
-  run(input: Input) {
+  run(input: I): O {
     let output: any = input;
 
     for (const entry of this.pipeline) {
@@ -197,6 +205,12 @@ const WrappedPipe = new Proxy(Pipe, {
     return new target(...args);
   },
 });
+
+const pipe = new Pipe<number>()
+  .pipe("toExponential")
+  .pipe("charAt", 2)
+  .pipe("charCodeAt", 0)
+  .pipe("toPrecision", 1);
 
 export { WrappedPipe as Pipe };
 export type { ProtectedProperty };
