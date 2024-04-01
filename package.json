@@ -12,8 +12,8 @@
     "test": "vitest run --config vitest.config.ts --typecheck -- && pnpm typecheck",
     "watch": "vitest --config vitest.config.ts --typecheck --",
     "coverage": "vitest run --coverage",
-    "typecheck": "echo 'Typechecking...' && tsc --noEmit",
-    "publish": "pnpm build && changeset publish"
+    "typecheck": "echo 'Typechecking...' && tsc --noEmit && echo 'All good!'",
+    "ci:publish": "pnpm build && changeset publish"
   },
   "keywords": [],
   "author": {
